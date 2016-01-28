@@ -1,79 +1,84 @@
-var elixir = require('laravel-elixir');
+var gulp            = require('gulp'),
+    sass            = require('gulp-sass'),
+    cssnano         = require('gulp-cssnano'),
+    autoprefixer    = require('gulp-autoprefixer'),
+    uglify          = require('gulp-uglify'),
+    concat          = require('gulp-concat');
 
-elixir(function(mix) {
- mix
-     .phpUnit()
+var sassOptions = {
+    errLogToConsole: true,
+    outputStyle: 'expanded'
+};
 
-    /**
-     * Copy needed files from /node directories
-     * to /public directory.
-     */
-     .copy(
-       'node_modules/font-awesome/fonts',
-       'public/build/fonts/font-awesome'
-     )
-     .copy(
-       'node_modules/bootstrap-sass/assets/fonts/bootstrap',
-       'public/build/fonts/bootstrap'
-     )
-     .copy(
-       'node_modules/bootstrap-sass/assets/javascripts/bootstrap.min.js',
-       'public/js/vendor/bootstrap'
-     )
 
-     /**
-      * Process frontend SCSS stylesheets
-      */
-     .sass([
-        'frontend/app.scss',
-        'plugin/sweetalert/sweetalert.scss'
-     ], 'resources/assets/css/frontend/app.css')
+gulp.task('copy', function() {
+    gulp
+        .src(['node_modules/font-awesome/fonts'])
+        .pipe(gulp.dest('public/build/fonts/font-awesome'));
 
-     /**
-      * Combine pre-processed frontend CSS files
-      */
-     .styles([
-        'frontend/app.css'
-     ], 'public/css/frontend.css')
+    gulp.src(['node_modules/bootstrap-sass/assets/fonts/bootstrap'])
+        .pipe(gulp.dest('public/build/fonts/bootstrap'));
 
-     /**
-      * Combine frontend scripts
-      */
-     .scripts([
-        'plugin/sweetalert/sweetalert.min.js',
-        'plugins.js',
-        'frontend/app.js'
-     ], 'public/js/frontend.js')
+    gulp.src(['node_modules/bootstrap-sass/assets/javascripts/bootstrap.min.js'])
+        .pipe(gulp.dest('public/js/vendor/bootstrap'));
 
-     /**
-      * Process backend SCSS stylesheets
-      */
-     .sass([
-         'backend/app.scss',
-         'backend/plugin/toastr/toastr.scss',
-         'plugin/sweetalert/sweetalert.scss'
-     ], 'resources/assets/css/backend/app.css')
 
-     /**
-      * Combine pre-processed backend CSS files
-      */
-     .styles([
-         'backend/app.css'
-     ], 'public/css/backend.css')
-
-     /**
-      * Combine backend scripts
-      */
-     .scripts([
-         'plugin/sweetalert/sweetalert.min.js',
-         'plugins.js',
-         'backend/app.js',
-         'backend/plugin/toastr/toastr.min.js',
-         'backend/custom.js'
-     ], 'public/js/backend.js')
-
-    /**
-      * Apply version control
-      */
-     .version(["public/css/frontend.css", "public/js/frontend.js", "public/css/backend.css", "public/js/backend.js"]);
 });
+
+gulp.task('frontend', function() {
+    gulp.src([
+            'resources/assets/scss/frontend/app.scss',
+            'resources/assets/scss/plugin/sweetalert/sweetalert.scss'
+        ])
+        .pipe(sass(sassOptions).on('error', sass.logError))
+        .pipe(gulp.dest('resources/assets/css/frontend'))
+        .pipe(concat('frontend.css'))
+        .pipe(autoprefixer('last 2 versions'))
+        .pipe(cssnano())
+        .pipe(gulp.dest('public/css/'));
+
+    gulp.src([
+            'resources/assets/js/plugin/sweetalert/sweetalert.min.js',
+            'resources/assets/js/plugins.js',
+            'resources/assets/js/frontend/app.js'
+        ])
+        .pipe(concat('frontend.js'))
+        .pipe(uglify())
+        .pipe(gulp.dest('public/js/'));
+});
+
+gulp.task('backend', function() {
+    gulp.src([
+            'resources/assets/scss/backend/app.scss',
+            'resources/assets/scss/backend/plugin/toastr/toastr.scss',
+            'resources/assets/scss/plugin/sweetalert/sweetalert.scss'
+        ])
+        .pipe(sass(sassOptions).on('error', sass.logError))
+        .pipe(gulp.dest('resources/assets/css/backend'))
+        .pipe(concat('backend.css'))
+        .pipe(autoprefixer('last 2 versions'))
+        .pipe(cssnano())
+        .pipe(gulp.dest('public/css'));
+
+    gulp.src([
+            'resources/assets/js/plugin/sweetalert/sweetalert.min.js',
+            'resources/assets/js/plugins.js',
+            'resources/assets/js/backend/app.js',
+            'resources/assets/js/backend/plugin/toastr/toastr.min.js',
+            'resources/assets/js/backend/custom.js'
+        ])
+        .pipe(concat('backend.js'))
+        .pipe(uglify())
+        .pipe(gulp.dest('public/js/'));
+});
+
+
+gulp.task('default', ['copy', 'frontend', 'backend']);
+
+/*
+@todo:
+    /!**
+      * Apply version control
+      *!/
+     .version(["public/css/frontend.css", "public/js/frontend.js", "public/css/backend.css", "public/js/backend.js"]);
+});*/
